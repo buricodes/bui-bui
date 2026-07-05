@@ -32,7 +32,6 @@
     const last = Number(sessionStorage.getItem(key) || 0);
     if (Date.now() - last < RELOAD_COOLDOWN_MS) return;
     sessionStorage.setItem(key, String(Date.now()));
-    console.log('[Shorts Controller] Extension connection lost, reloading page to recover...');
     window.location.reload();
   }
 
@@ -62,7 +61,6 @@
       blockedKeywords = result.blockedKeywords || [];
       blockedAudios = result.blockedAudios || [];
     } catch (error) {
-      console.error('Error loading settings:', error);
       if (isInvalidContextError(error)) reloadPage();
     }
   }
@@ -72,7 +70,6 @@
       const result = await chrome.storage.local.get('videoData');
       videoData = result.videoData || {};
     } catch (error) {
-      console.error('Error loading video data:', error);
       if (isInvalidContextError(error)) reloadPage();
     }
   }
@@ -81,7 +78,6 @@
     try {
       await chrome.storage.local.set({ videoData });
     } catch (error) {
-      console.error('Error saving video data:', error);
       if (isInvalidContextError(error)) reloadPage();
     }
   }
@@ -233,7 +229,7 @@
   }
 
   function scrollToNext() {
-    console.log('[Shorts Controller] Scrolling to next short...');
+    if (!isEnabled) return;
 
     const container = document.querySelector('#shorts-container, ytd-shorts #shorts-inner-container, ytd-shorts')
       || document.body;
@@ -269,14 +265,9 @@
       return;
     }
 
-    if (currentVideoId !== videoId) {
-      console.log(`[Shorts Controller] Video changed from ${currentVideoId} to ${videoId}`);
-    }
-
     currentVideoId = videoId;
 
     if (shouldBlockContent()) {
-      console.log('Blocking content due to keyword match');
       setTimeout(() => scrollToNext(), 100);
       return;
     }
@@ -299,13 +290,11 @@
     updateWatchCountIndicator();
 
     if (audioName && shouldBlockAudio(audioName)) {
-      console.log('Blocking content due to audio match:', audioName);
       setTimeout(() => scrollToNext(), 100);
       return;
     }
 
     if (watchCount > maxWatchCount) {
-      console.log(`[Shorts Controller] Watch count already exceeded on load (${watchCount}/${maxWatchCount}), scrolling to next`);
       setTimeout(() => scrollToNext(), 1000);
       return;
     }
@@ -374,22 +363,19 @@
   function startTracking(videoId) {
     const video = getVideoElement();
     if (!video) {
-      console.log('[Shorts Controller] No video element found');
       return;
     }
 
     const session = ++trackingSession;
     let maxTimeReached = 0;
-    let countedThisLoop = false;
+    let lastCountedAt = 0;
 
-    const isActive = () => session === trackingSession && video.isConnected;
-
-    console.log(`[Shorts Controller] Starting tracking for video: ${videoId}`);
+    const isActive = () => isEnabled && session === trackingSession && video.isConnected;
 
     const countCompletedWatch = () => {
-      if (countedThisLoop) return;
-      countedThisLoop = true;
-      console.log('[Shorts Controller] Full watch-through detected');
+      const now = Date.now();
+      if (now - lastCountedAt < 1000) return;
+      lastCountedAt = now;
       incrementWatchCount(videoId);
     };
 
@@ -408,7 +394,6 @@
           countCompletedWatch();
         }
         maxTimeReached = currentTime;
-        countedThisLoop = false;
       }
     };
 
@@ -447,10 +432,7 @@
     await saveVideoData();
     updateWatchCountIndicator();
 
-    console.log(`[Shorts Controller] Watch count for ${videoId}: ${newCount}/${maxWatchCount}`);
-
     if (newCount >= maxWatchCount) {
-      console.log(`[Shorts Controller] Watch count reached/exceeded limit (${newCount} >= ${maxWatchCount}), scrolling to next`);
       setTimeout(() => {
         if (videoId === currentVideoId && videoData[videoId] && videoData[videoId].watchCount >= maxWatchCount) {
           scrollToNext();
@@ -492,12 +474,6 @@
       setTimeout(checkVideoChange, 100);
     });
 
-    // A background tab still gets a firehose of DOM mutations from YouTube's
-    // own feed/player. Only ever do work for the tab the user is actually on,
-    // and coalesce bursts of mutations into a single check instead of running
-    // filterFeedItems() (querySelectorAll + layout-forcing innerText reads)
-    // once per mutation - with several tabs open that was enough to make the
-    // whole browser unresponsive.
     let mutationCheckPending = false;
     const scheduleMutationCheck = () => {
       if (mutationCheckPending || document.hidden) return;

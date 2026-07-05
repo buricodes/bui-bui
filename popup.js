@@ -63,9 +63,7 @@ async function loadTheme() {
   try {
     const result = await chrome.storage.local.get('theme');
     applyTheme(result.theme === 'light' ? 'light' : 'dark');
-  } catch (error) {
-    console.error('Error loading theme:', error);
-  }
+  } catch (error) {}
 }
 
 async function toggleTheme() {
@@ -101,9 +99,7 @@ async function loadSettings() {
 
     renderKeywords(result.blockedKeywords || []);
     renderAudios(result.blockedAudios || []);
-  } catch (error) {
-    console.error('Error loading settings:', error);
-  }
+  } catch (error) {}
 }
 
 async function saveSettings() {
@@ -350,7 +346,6 @@ async function loadStats() {
     const totalTracked = Object.keys(videoData).length;
     totalTrackedEl.textContent = `${totalTracked} video${totalTracked !== 1 ? 's' : ''}`;
   } catch (error) {
-    console.error('Error loading stats:', error);
     currentVideoIdEl.textContent = 'Error';
     currentWatchCountEl.textContent = '-';
     currentAudioEl.textContent = '-';
@@ -409,7 +404,6 @@ async function testIncrement() {
 
     showToast(`Watch count incremented to ${videoData[videoId].watchCount}`);
   } catch (error) {
-    console.error('Error testing increment:', error);
     showToast('Error: ' + error.message);
   }
 }
@@ -428,8 +422,6 @@ async function testScroll() {
       showToast('Scrolled to next Short');
       return;
     } catch (msgError) {
-      console.log('Message failed:', msgError);
-
       if (chrome.scripting && chrome.scripting.executeScript) {
         try {
           await chrome.scripting.executeScript({
@@ -458,7 +450,6 @@ async function testScroll() {
       }
     }
   } catch (error) {
-    console.error('Error testing scroll:', error);
     showToast('Error: ' + error.message);
   }
 }
@@ -475,7 +466,6 @@ async function restartTab() {
     await chrome.tabs.reload(tab.id);
     showToast('Extension restarted on this tab');
   } catch (error) {
-    console.error('Error restarting tab:', error);
     showToast('Error: ' + error.message);
   }
 }

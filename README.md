@@ -1,4 +1,4 @@
-# YouTube Shorts Controller
+# Bui Bui
 
 A lightweight Chrome Extension (Manifest V3) for controlling YouTube Shorts with watch count tracking, content filtering, and audio blocking.
 

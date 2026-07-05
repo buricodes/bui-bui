@@ -108,12 +108,16 @@ body {
   width: 38px;
   height: 38px;
   border-radius: 11px;
-  background: var(--sc-accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  overflow: hidden;
   flex: none;
-  box-shadow: 0 3px 8px rgba(0, 174, 169, .35);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, .25);
+}
+
+.brand-icon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .brand-text { flex: 1; min-width: 0; }
